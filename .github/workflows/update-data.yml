@@ -42,17 +42,24 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
 
-      - name: 🔄 Pull latest changes (handle conflicts)
+      - name: 🚀 Stash changes before pulling
         run: |
           git checkout main
-          git pull origin main --rebase || git merge --abort
+          git add .
+          git stash push -m "Auto-stash before pull" || echo "✅ No changes to stash"
+          git pull origin main --rebase || (git rebase --abort && echo "⚠️ Rebase failed, using merge instead" && git pull origin main)
+
+      - name: 🔄 Apply stashed changes
+        run: |
+          git stash list
+          git stash pop || echo "✅ No stashed changes to apply"
 
       - name: ✅ Add and commit changes
         run: |
           git add .
           git commit -m "🔄 Updated data on ${{ env.DATE }}" || echo "✅ No changes to commit"
 
-      - name: 🚀 Push changes safely
+      - name: 🚢 Push changes safely
         run: |
           git pull origin main --rebase
           git push origin main --force-with-lease || (echo "⚠️ Force pushing due to non-fast-forward error..." && git push origin main --force)
