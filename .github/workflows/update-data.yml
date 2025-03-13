@@ -9,13 +9,9 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # Bước 1: Clone repo
-      - name: Checkout repository
+      - name: Checkout repo content
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Lấy toàn bộ lịch sử, cần thiết cho rebase
 
-      # Bước 2: Cài đặt Python và cache thư viện
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -23,45 +19,39 @@ jobs:
           cache: 'pip'
           cache-dependency-path: 'requirements.txt'
 
-      # Bước 3: Cài đặt các package từ requirements.txt
-      - name: Install dependencies
+      - name: Debug cache info
         run: |
-          pip install -r requirements.txt
+          echo "📦 Cache directory:"
+          pip cache dir
+          echo "📦 Cached packages:"
+          pip cache list || echo "No cached packages found."
 
-      # Bước 4: Chạy script Python để update data
-      - name: Update data
-        run: python main.py
-
-      # Bước 5: Lấy ngày hiện tại để dùng cho commit message
-      - name: Get current date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-
-      # Bước 6: Pull code mới nhất từ remote và rebase để tránh conflict
-      - name: Pull latest changes
+      - name: Install Python packages
         run: |
-          git config user.name "GitHub Action"
-          git config user.email "action@github.com"
-          git pull origin main --rebase || echo "No changes to rebase"
-
-      # Bước 7: Kiểm tra xem có thay đổi gì sau khi update data không
-      - name: Check for changes
-        id: git-check
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "changes=true" >> $GITHUB_ENV
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
           else
-            echo "changes=false" >> $GITHUB_ENV
+            echo "❌ requirements.txt not found"
+            exit 1
           fi
 
-      # Bước 8: Commit và push nếu có thay đổi
-      - name: Commit and push changes
-        if: env.changes == 'true'
-        run: |
-          git add .
-          git commit -m "Updated data on ${{ env.date }}"
-          git push origin main
+      - name: Run data update script
+        run: python main.py
 
-      # Bước 9: Thông báo nếu không có thay đổi
-      - name: No changes to commit
-        if: env.changes == 'false'
-        run: echo "No changes detected. Skipping push."
+      - name: Get current date
+        run: echo "DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Pull latest changes (handle conflicts safely)
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git pull origin main --rebase || echo "⚠️ No changes to rebase"
+
+      - name: Commit and push changes
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_user_name: GitHub Action
+          commit_user_email: action@github.com
+          commit_message: "🔄 Updated data on ${{ env.DATE }}"
+          branch: main
