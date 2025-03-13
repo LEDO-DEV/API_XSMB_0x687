@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout repo content
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Lấy đầy đủ lịch sử commit để xử lý merge
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -41,16 +43,15 @@ jobs:
 
       - name: Pull latest changes (handle conflicts)
         run: |
-          git fetch origin main
           git checkout main
-          git pull origin main --rebase || (echo "⚠️ Rebase failed, aborting..." && git rebase --abort && exit 1)
+          git pull origin main --rebase || git merge --abort
 
       - name: Add and commit changes
         run: |
           git add .
           git commit -m "🔄 Updated data on ${{ env.DATE }}" || echo "No changes to commit"
 
-      - name: Push changes (force if needed)
+      - name: Force push only if necessary
         run: |
           git pull origin main --rebase
-          git push origin main || (echo "⚠️ Push failed, forcing update..." && git push origin main --force)
+          git push origin main || (echo "⚠️ Force pushing due to non-fast-forward error..." && git push origin main --force)
