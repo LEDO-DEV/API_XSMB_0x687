@@ -19,13 +19,6 @@ jobs:
           cache: 'pip'
           cache-dependency-path: 'requirements.txt'
 
-      - name: Debug cache info
-        run: |
-          echo "📦 Cache directory:"
-          pip cache dir
-          echo "📦 Cached packages:"
-          pip cache list || echo "No cached packages found."
-
       - name: Install Python packages
         run: |
           if [ -f requirements.txt ]; then
@@ -41,17 +34,23 @@ jobs:
       - name: Get current date
         run: echo "DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Pull latest changes (handle conflicts safely)
+      - name: Configure Git
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git pull origin main --rebase || echo "⚠️ No changes to rebase"
 
-      - name: Commit and push changes
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          commit_user_name: GitHub Action
-          commit_user_email: action@github.com
-          commit_message: "🔄 Updated data on ${{ env.DATE }}"
-          branch: main
+      - name: Pull latest changes (handle conflicts)
+        run: |
+          git fetch origin main
+          git checkout main
+          git pull origin main --rebase || (echo "⚠️ Rebase failed, aborting..." && git rebase --abort && exit 1)
+
+      - name: Add and commit changes
+        run: |
+          git add .
+          git commit -m "🔄 Updated data on ${{ env.DATE }}" || echo "No changes to commit"
+
+      - name: Push changes (force if needed)
+        run: |
+          git pull origin main --rebase
+          git push origin main || (echo "⚠️ Push failed, forcing update..." && git push origin main --force)
