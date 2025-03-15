@@ -42,22 +42,22 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
 
-      - name: 🚀 Stash changes before pulling
+      - name: 🚀 Pull latest changes
         run: |
           git checkout main
-          git add .
-          git stash push -m "Auto-stash before pull" || echo "✅ No changes to stash"
           git pull origin main --rebase || (git rebase --abort && echo "⚠️ Rebase failed, using merge instead" && git pull origin main)
-
-      - name: 🔄 Apply stashed changes
-        run: |
-          git stash list
-          git stash pop || echo "✅ No stashed changes to apply"
 
       - name: ✅ Add and commit changes
         run: |
           git add .
-          git commit -m "🔄 Updated data on ${{ env.DATE }}" || echo "✅ No changes to commit"
+          git commit -m "🔄 Updated data on ${{ env.DATE }}" || echo "✅ No new data changes to commit"
+
+      - name: 🔥 Ensure daily commit for Contributions
+        run: |
+          touch .github/contributions_tracker.txt
+          echo "✅ Update on $(date)" >> .github/contributions_tracker.txt
+          git add .github/contributions_tracker.txt
+          git commit -m "📌 Daily contribution update on ${{ env.DATE }}"
 
       - name: 🚢 Push changes safely
         run: |
@@ -68,7 +68,7 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot7517287911:AAHORgQUdVss8yCVvdyC1ZdGfYQx5LP_nfM/sendMessage" \
           -d chat_id="-1002201883338" \
-          -d text="✅ Đã Update Data XSMB_API"
+          -d text="✅ Đã Update Data XSMB rùi nghen!"
 
       - name: 🎉 Workflow completed
         run: echo "✅ Data updated successfully!"
