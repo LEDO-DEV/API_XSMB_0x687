@@ -2,7 +2,7 @@ name: Update data
 
 on:
   schedule:
-    - cron: '35 11 * * *' # 6:35 PM tại Việt Nam (UTC+7 = 11:35 UTC)
+    - cron: '30 11 * * *' # 6:35 PM tại Việt Nam (UTC+7 = 11:35 UTC)
   workflow_dispatch: # Cho phép chạy thủ công
 
 permissions:
