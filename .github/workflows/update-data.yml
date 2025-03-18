@@ -2,8 +2,11 @@ name: Update data
 
 on:
   schedule:
-    - cron: '35 11 * * *' # 6:35 PM tại Việt Nam
+    - cron: '35 11 * * *' # 6:35 PM tại Việt Nam (UTC+7 = 11:35 UTC)
   workflow_dispatch: # Cho phép chạy thủ công
+
+permissions:
+  contents: write # Cấp quyền ghi để push được khi chạy tự động
 
 jobs:
   update-data:
@@ -13,7 +16,7 @@ jobs:
       - name: 📥 Checkout repo content
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Lấy đầy đủ lịch sử commit để xử lý merge
+          fetch-depth: 0 # Lấy đầy đủ lịch sử commit
 
       - name: 🐍 Set up Python
         uses: actions/setup-python@v5
@@ -42,16 +45,10 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
 
-      - name: 🏦 Stash local changes before pull
-        run: |
-          git checkout main
-          git stash push -m "🔄 Temp stash before pull" || echo "✅ No local changes to stash"
-          git pull origin main --rebase || (git rebase --abort && echo "⚠️ Rebase failed, using merge instead" && git pull origin main)
-          git stash pop || echo "✅ No stashed changes to apply"
-
       - name: ✅ Add and commit changes
         run: |
-          git add .
+          # Chỉ thêm các file dữ liệu cần thiết, giả sử dữ liệu nằm trong thư mục 'data/'
+          git add data/ || echo "✅ No data files to add"
           if ! git diff --cached --quiet; then
             git commit -m "🔄 Updated data on ${{ env.DATE }}"
           else
@@ -65,10 +62,8 @@ jobs:
           git add .github/contributions_tracker.txt
           git commit -m "📌 Daily contribution update on ${{ env.DATE }}" || echo "✅ No new contribution update needed"
 
-      - name: 🚢 Push changes safely
-        run: |
-          git pull origin main --rebase || echo "⚠️ Pull failed, proceeding with push..."
-          git push origin main --force-with-lease || (echo "⚠️ Force pushing due to non-fast-forward error..." && git push origin main --force)
+      - name: 🚢 Push changes
+        run: git push origin main
 
       - name: 📲 Send notification to Telegram
         run: |
