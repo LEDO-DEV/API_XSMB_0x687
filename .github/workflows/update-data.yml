@@ -65,11 +65,5 @@ jobs:
       - name: 🚢 Push changes
         run: git push origin main
 
-      - name: 📲 Send notification to Telegram
-        run: |
-          curl -s -X POST "https://api.telegram.org/bot7517287911:AAHORgQUdVss8yCVvdyC1ZdGfYQx5LP_nfM/sendMessage" \
-          -d chat_id="-1002201883338" \
-          -d text="✅ Đã Update Data XSMB rùi nghen!"
-
       - name: 🎉 Workflow completed
         run: echo "✅ Data updated successfully!"
